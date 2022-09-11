@@ -24,18 +24,16 @@ function activate(context) {
   let disposable = vscode.commands.registerCommand(
     "copilot.helloWorld",
     function () {
-      
       // Display a message box to the user
-      vscode.workspace.onDidChangeTextDocument((e) => { 
-
-       // current editor
+      vscode.workspace.onDidChangeTextDocument((e) => {
+        // current editor
         const editor = vscode.window.activeTextEditor;
-        
+
         // initiate variables
-        var textIsCopied = false;   
+        var textIsCopied = false;
 
         // check whether the filename is .py
-        if (editor.document.languageId === "python") {   
+        if (editor.document.languageId === "javascript") {
           // get current time in milliseconds
           var time = new Date().getTime();
           //console.log(time);
@@ -46,8 +44,10 @@ function activate(context) {
           var detectText = content.text;
           const keys = convertKeys(detectText);
 
-          vscode.env.clipboard.readText().then((text) => {
-            // check whether the clipboard is empty
+          vscode.env.clipboard
+            .readText()
+            .then((text) => {
+              // check whether the clipboard is empty
               if (text !== "") {
                 // compare detectText and clipboard
                 if (detectText === text) {
@@ -55,41 +55,40 @@ function activate(context) {
                   console.log("Inside ", textIsCopied);
                 }
               }
-          });
+            })
+            .then(function (result) {
+              console.log("Outside", textIsCopied);
+              // detect whether user has accepted code suggestion
+              if (detectText.length > 20 && !textIsCopied) {
+                console.log("COPILOT SUGGESTION ACCEPTED");
+                console.log(content.range.end);
 
-          console.log("Outside", textIsCopied);
-          
-          // detect whether user has accepted code suggestion
-          if(detectText.length > 20 && !textIsCopied){
-              console.log("COPILOT SUGGESTION ACCEPTED");
-              console.log(content.range.end);
-
-              // get cursor position
-              cursor_position1 = editor.selection.active;
-              console.log("Position 1 cursor: ", cursor_position1);
-          // detect whether user has edited code suggestion within 60 seconds
-          }else{
-            //get the start and end range of the cursor then use contain method to check whether the current position is within
-            
-
-
-
-            if (editor.selection.isEmpty) {
-              current_cursor_position = getCursorPosition(editor).line;
-              // Check if this is the edit made before was a copilot edit (aka within the range)
-              if (cursor_position1.line < current_cursor_position && cursor_position2.line > current_cursor_position) {
-                console.log("COPILOT HAS BEEN EDITED!");
-                //console.log("Position 1 cursor: ", cursor_position1);
-                //console.log("Position 2 cursor: ", cursor_position2);
+                // get cursor position
+                cursor_position1 = editor.selection.active;
+                console.log("Position 1 cursor: ", cursor_position1);
+                // detect whether user has edited code suggestion within 60 seconds
               } else {
-                // the Position object gives you the line and character where the cursor is
-                cursor_position2 = getCursorPosition(editor);
-                //console.log("Position 2 cursor: ", cursor_position2);
+                //get the start and end range of the cursor then use contain method to check whether the current position is within
+
+                if (editor.selection.isEmpty) {
+                  current_cursor_position = getCursorPosition(editor).line;
+                  // Check if this is the edit made before was a copilot edit (aka within the range)
+                  if (
+                    cursor_position1.line < current_cursor_position &&
+                    cursor_position2.line > current_cursor_position
+                  ) {
+                    console.log("COPILOT HAS BEEN EDITED!");
+                    //console.log("Position 1 cursor: ", cursor_position1);
+                    //console.log("Position 2 cursor: ", cursor_position2);
+                  } else {
+                    // the Position object gives you the line and character where the cursor is
+                    cursor_position2 = getCursorPosition(editor);
+                    //console.log("Position 2 cursor: ", cursor_position2);
+                  }
+                }
               }
-            }
-          }
-      }
-        
+            });
+        }
 
         // // current cursor position
         // var current_cursor = editor.selection.active;
@@ -103,12 +102,11 @@ function activate(context) {
         // console.log("End", content.range.end);
         // console.log("current_cursor", current_cursor);
 
-
-        // // translating text to capture special characters such as TAB, ENTER, SPACE 
+        // // translating text to capture special characters such as TAB, ENTER, SPACE
         // const keys = convertKeys(key);
 
         // if (key.length > 20) {
-        //   // detect whether there are multiple new lines in the text 
+        //   // detect whether there are multiple new lines in the text
         //   console.log("COPILOT HAS BEEN USED!");
         //   // If the user has used copilot, then save the cursor previous position. top limit
         //   cursor_position1 = editor.selection.active;
