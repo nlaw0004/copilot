@@ -1,6 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const { ConsoleReporter } = require("@vscode/test-electron");
+const { DiffieHellman } = require("crypto");
 const { isConditionalExpression } = require("typescript");
 const vscode = require("vscode");
 let cursor_position1 = 0;
@@ -67,7 +68,6 @@ function activate(context) {
                 console.log("Position 1 cursor: ", cursor_position1);
                 // detect whether user has edited code suggestion within 60 seconds
                 
-
                 // create new range
                 newRange = newRange.with(content.range.end, cursor_position1);
                 console.log("Range: ", newRange);
@@ -78,6 +78,16 @@ function activate(context) {
                   current_cursor_position = getCursorPosition(editor);
                   console.log("Current cursor position: ", current_cursor_position);
                   console.log(newRange.contains(current_cursor_position));
+
+                  //TODO: check the time between the last accept and the edits. also make sure an edit to 1 accepted solution is recorded once
+                  //Write Logs. 
+
+                  /**
+                   * 1. Keystrokes --> modify (CTRL-Z) --> Sandy
+                   * 2. Keystrokes --> unmodify (TAB) --> Natalie
+                   * 3. Time between accept and edit --> Natalie
+                   * 4. Logging Data --> Sandy
+                  */
 
                   // Check if this is the edit made before was a copilot edit (aka within the range)
                   if (newRange.contains(current_cursor_position)) {
