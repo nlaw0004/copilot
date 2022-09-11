@@ -4,11 +4,9 @@ const { ConsoleReporter } = require("@vscode/test-electron");
 const { DiffieHellman } = require("crypto");
 const { isConditionalExpression } = require("typescript");
 const vscode = require("vscode");
-let cursor_position1 = 0;
-let cursor_position2 = 0;
-let cursor_position_char1 = 0;
-let cursor_position_char2 = 0;
 var newRange = new vscode.Range(0, 0, 0, 0);
+var edited = false;
+var accepted = false; 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -30,7 +28,7 @@ function activate(context) {
       vscode.workspace.onDidChangeTextDocument((e) => {
         // current editor
         const editor = vscode.window.activeTextEditor;
-
+        
         // initiate variables
         var textIsCopied = false;
 
@@ -38,7 +36,6 @@ function activate(context) {
         if (editor.document.languageId === "python") {
           // get current time in milliseconds
           var time = new Date().getTime();
-          //console.log(time);
 
           // detect whether users have paste line(s) of code
           const content = e.contentChanges[0];
@@ -52,48 +49,43 @@ function activate(context) {
                 // compare detectText and clipboard
                 if (detectText === text) {
                   textIsCopied = true;
-                  console.log("Inside ", textIsCopied);
                 }
               }
             })
             .then(function (result) {
-              console.log("Outside", textIsCopied);
+              let documentIsEmpty = editor.document.getText() === "";
+
               // detect whether user has accepted code suggestion
               if (detectText.length > 20 && !textIsCopied) {
                 console.log("COPILOT SUGGESTION ACCEPTED");
                 console.log(content.range.end);
 
                 // get cursor position
-                cursor_position1 = editor.selection.active;
-                console.log("Position 1 cursor: ", cursor_position1);
+                var cursor_position = editor.selection.active;
                 // detect whether user has edited code suggestion within 60 seconds
                 
                 // create new range
-                newRange = newRange.with(content.range.end, cursor_position1);
-                console.log("Range: ", newRange);
+                newRange = newRange.with(content.range.end, cursor_position);
                 
-              } else {
-                //get the start and end range of the cursor then use contain method to check whether the current position is within
-                if (editor.selection.isEmpty) {
-                  current_cursor_position = getCursorPosition(editor);
-                  console.log("Current cursor position: ", current_cursor_position);
-                  console.log(newRange.contains(current_cursor_position));
+                // reset edited variable
+                edited = false;
+                accepted = true;
+              }  else if (accepted && !documentIsEmpty){
+                // detect whether user has accepted a code suggestion within 60 seconds 
+                // get current position 
+                current_cursor_position = getCursorPosition(editor);
 
-                  //TODO: check the time between the last accept and the edits. also make sure an edit to 1 accepted solution is recorded once
-                  //Write Logs. 
+                console.log(newRange);
 
-                  /**
-                   * 1. Keystrokes --> modify (CTRL-Z) --> Sandy
-                   * 2. Keystrokes --> unmodify (TAB) --> Natalie
-                   * 3. Time between accept and edit --> Natalie
-                   * 4. Logging Data --> Sandy
-                  */
-
-                  // Check if this is the edit made before was a copilot edit (aka within the range)
-                  if (newRange.contains(current_cursor_position)) {
-                    console.log("COPILOT SUGGESTION EDITED");
-                  }
+                // Check if this is the edit made before was a copilot edit (aka within the range). 
+                if (newRange.contains(current_cursor_position) && !edited) {
+                  console.log("COPILOT SUGGESTION EDITED");
+                  // edited variable set to true to make sure the edit is only counted once
+                  edited = true;
+                  // reset accepted variable to accept new code suggestion
+                  accepted = false;
                 }
+              
               }
             });
         }
@@ -126,3 +118,9 @@ module.exports = {
 
 
 
+                 /**
+                   * 1. Keystrokes --> modify (CTRL-Z) --> Sandy
+                   * 2. Keystrokes --> unmodify (TAB) --> Natalie
+                   * 3. Time between accept and edit --> Natalie
+                   * 4. Logging Data --> Sandy
+                  */
