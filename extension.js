@@ -7,6 +7,7 @@ const vscode = require("vscode");
 var newRange = new vscode.Range(0, 0, 0, 0);
 var edited = false;
 var accepted = false; 
+var acceptedTime = null;
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -37,9 +38,17 @@ function activate(context) {
           // get current time in milliseconds
           var time = new Date().getTime();
 
+          // if the file is accepted, check whether the time is within 60 seconds
+          if (accepted && acceptedTime !==null) {
+            if (time - acceptedTime > 60000) {
+              console.log("time is up: Edit will not be counted");
+              accepted = false;
+              acceptedTime = null;
+            }
+          }
+
           // detect whether users have paste line(s) of code
           const content = e.contentChanges[0];
-          //console.log(content.range);
           var detectText = content.text;
           const keys = convertKeys(detectText);
 
@@ -70,12 +79,14 @@ function activate(context) {
                 // reset edited variable
                 edited = false;
                 accepted = true;
+
+                // get accepted time
+                acceptedTime = new Date().getTime();
+
               }  else if (accepted && !documentIsEmpty){
                 // detect whether user has accepted a code suggestion within 60 seconds 
                 // get current position 
                 current_cursor_position = getCursorPosition(editor);
-
-                console.log(newRange);
 
                 // Check if this is the edit made before was a copilot edit (aka within the range). 
                 if (newRange.contains(current_cursor_position) && !edited) {
