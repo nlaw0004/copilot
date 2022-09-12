@@ -1,13 +1,14 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const { ConsoleReporter } = require("@vscode/test-electron");
-const { DiffieHellman } = require("crypto");
 const { isConditionalExpression } = require("typescript");
 const vscode = require("vscode");
 var newRange = new vscode.Range(0, 0, 0, 0);
 var edited = false;
-var accepted = false; 
+var accepted = false;
 var acceptedTime = null;
+var numberOfAccepted = 0;
+var numberOfEdited = 0;
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 
@@ -29,17 +30,17 @@ function activate(context) {
       vscode.workspace.onDidChangeTextDocument((e) => {
         // current editor
         const editor = vscode.window.activeTextEditor;
-        
+
         // initiate variables
         var textIsCopied = false;
 
         // check whether the filename is .py
-        if (editor.document.languageId === "python") {
+        if (editor.document.languageId === "javascript") {
           // get current time in milliseconds
           var time = new Date().getTime();
 
           // if the file is accepted, check whether the time is within 60 seconds
-          if (accepted && acceptedTime !==null) {
+          if (accepted && acceptedTime !== null) {
             if (time - acceptedTime > 60000) {
               console.log("time is up: Edit will not be counted");
               accepted = false;
@@ -52,7 +53,9 @@ function activate(context) {
           var detectText = content.text;
           const keys = convertKeys(detectText);
 
-          vscode.env.clipboard.readText().then((text) => {
+          vscode.env.clipboard
+            .readText()
+            .then((text) => {
               // check whether the clipboard is empty
               if (text !== "") {
                 // compare detectText and clipboard
@@ -67,36 +70,86 @@ function activate(context) {
               // detect whether user has accepted code suggestion
               if (detectText.length > 20 && !textIsCopied) {
                 console.log("COPILOT SUGGESTION ACCEPTED");
-                console.log(content.range.end);
+                //console.log(content.range.end);
+                // Increment the number of accepted code suggestions
+                if (!context.workspaceState.get("numberOfAccepted")) {
+                  numberOfAccepted++;
+                  context.workspaceState.update(
+                    "numberOfAccepted",
+                    numberOfAccepted
+                  );
+                  let noAcceptedWorkspaceState =
+                    context.workspaceState.get("numberOfAccepted");
+                  console.log(
+                    "Total suggestions accepted: ",
+                    noAcceptedWorkspaceState
+                  );
+                } else {
+                  let noAcceptedWorkspaceState =
+                    context.workspaceState.get("numberOfAccepted");
+                  noAcceptedWorkspaceState++;
+                  context.workspaceState.update(
+                    "numberOfAccepted",
+                    noAcceptedWorkspaceState
+                  );
+                  console.log(
+                    "Total suggestions accepted: ",
+                    noAcceptedWorkspaceState
+                  );
+                }
 
                 // get cursor position
                 var cursor_position = editor.selection.active;
                 // detect whether user has edited code suggestion within 60 seconds
-                
+
                 // create new range
                 newRange = newRange.with(content.range.end, cursor_position);
-                
+
                 // reset edited variable
                 edited = false;
                 accepted = true;
 
                 // get accepted time
                 acceptedTime = new Date().getTime();
-
-              }  else if (accepted && !documentIsEmpty){
-                // detect whether user has accepted a code suggestion within 60 seconds 
-                // get current position 
+              } else if (accepted && !documentIsEmpty) {
+                // detect whether user has accepted a code suggestion within 60 seconds
+                // get current position
                 current_cursor_position = getCursorPosition(editor);
 
-                // Check if this is the edit made before was a copilot edit (aka within the range). 
+                // Check if this is the edit made before was a copilot edit (aka within the range).
                 if (newRange.contains(current_cursor_position) && !edited) {
                   console.log("COPILOT SUGGESTION EDITED");
+                  // increment number of edited counter
+                  if (!context.workspaceState.get("numberOfEdited")) {
+                    numberOfEdited++;
+                    context.workspaceState.update(
+                      "numberOfEdited",
+                      numberOfEdited
+                    );
+                    let noEditedWorkspaceState =
+                      context.workspaceState.get("numberOfEdited");
+                    console.log(
+                      "Total suggestions edited: ",
+                      noEditedWorkspaceState
+                    );
+                  } else {
+                    let noEditedWorkspaceState =
+                      context.workspaceState.get("numberOfEdited");
+                    noEditedWorkspaceState++;
+                    context.workspaceState.update(
+                      "numberOfEdited",
+                      noEditedWorkspaceState
+                    );
+                    console.log(
+                      "Total suggestions edited: ",
+                      noEditedWorkspaceState
+                    );
+                  }
                   // edited variable set to true to make sure the edit is only counted once
                   edited = true;
                   // reset accepted variable to accept new code suggestion
                   accepted = false;
                 }
-              
               }
             });
         }
@@ -127,11 +180,9 @@ module.exports = {
   deactivate,
 };
 
-
-
-                 /**
-                   * 1. Keystrokes --> modify (CTRL-Z) --> Sandy
-                   * 2. Keystrokes --> unmodify (TAB) --> Natalie
-                   * 3. Time between accept and edit --> Natalie
-                   * 4. Logging Data --> Sandy
-                  */
+/**
+ * 1. Keystrokes --> modify (CTRL-Z) --> Sandy
+ * 2. Keystrokes --> unmodify (TAB) --> Natalie
+ * 3. Time between accept and edit --> Natalie
+ * 4. Logging Data --> Sandy - either save to workspace or as local variable and send email
+ */
