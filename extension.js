@@ -3,6 +3,8 @@
 const { ConsoleReporter } = require("@vscode/test-electron");
 const { isConditionalExpression } = require("typescript");
 const vscode = require("vscode");
+const nodemailer = require("nodemailer");
+var userId = Math.floor(Math.random() * 100000);
 var newRange = new vscode.Range(0, 0, 0, 0);
 var edited = false;
 var accepted = false;
@@ -19,6 +21,19 @@ function activate(context) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
   console.log('Congratulations, your extension "copilot" is now active!');
+  let transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "FIT4003Copilot@gmail.com", // generated ethereal user
+      pass: "dhavujlgyeffmtwu", // generated ethereal password
+    },
+  });
+
+  // Set UserID
+  if (!context.workspaceState.get("userId")) {
+    context.workspaceState.update("userId", userId);
+  }
+  console.log("User ID: " + context.workspaceState.get("userId"));
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with  registerCommand
@@ -153,6 +168,30 @@ function activate(context) {
               }
             });
         }
+      });
+
+      // Detect when document is closed
+      vscode.workspace.onDidCloseTextDocument((e) => {
+        // send mail with defined transport object
+        let emailMessage = {
+          from: '"FIT4003 Group 22" <foo@example.com>', // sender address
+          to: "FIT4003Copilot@gmail.com", // list of receivers
+          subject: "IDE plugin data", // Subject line
+          text: `User ID: ${context.workspaceState.get("userId")}
+          Total suggestions accepted: ${context.workspaceState.get(
+            "numberOfAccepted"
+          )}
+          Total suggestions edited: ${context.workspaceState.get(
+            "numberOfEdited"
+          )}`, // plain text body
+        };
+        transporter.sendMail(emailMessage, function (err, data) {
+          if (err) {
+            console.log("Error " + err);
+          } else {
+            console.log("Email sent successfully");
+          }
+        });
       });
     }
   );
