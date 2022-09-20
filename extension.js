@@ -116,7 +116,7 @@ function activate(context) {
 
               // create new range
               newRange = newRange.with(content.range.end, cursor_position);
-              //currentFile["newRange"] = newRange;
+              currentFile.newRange = newRange;
 
               // reset edited variable
               //edited = false;
