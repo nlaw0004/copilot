@@ -4,11 +4,9 @@ const { ConsoleReporter } = require("@vscode/test-electron");
 const { isConditionalExpression } = require("typescript");
 const vscode = require("vscode");
 const nodemailer = require("nodemailer");
+const MimeNode = require("nodemailer/lib/mime-node");
 var userId = Math.floor(Math.random() * 100000);
 var newRange = new vscode.Range(0, 0, 0, 0);
-//var edited = false;
-//var accepted = false;
-var acceptedTime = null;
 var numberOfAccepted = 0;
 var numberOfEdited = 0;
 var files = {};
@@ -53,7 +51,6 @@ function activate(context) {
         
         // get the document name
         const docName = editor.document.fileName;
-        console.log(docName);
         
         // check whether docName is in files
         if (files[docName] === undefined) {     
@@ -82,9 +79,7 @@ function activate(context) {
         if (currentFile.accepted && currentFile.acceptedTime !== null) {
           if (time - currentFile.acceptedTime > 60000) {
             console.log("time is up: Edit will not be counted");
-            //accepted = false;
             currentFile.accepted = false;
-            //acceptedTime = null;
             currentFile.acceptedTime = null;
           }
         }
@@ -131,12 +126,10 @@ function activate(context) {
 
               // create new range
               newRange = newRange.with(content.range.end, cursor_position);
-              //currentFile["newRange"] = newRange;
+              currentFile.newRange = newRange;
 
               // reset edited variable
-              //edited = false;
               currentFile.edited = false;
-              //accepted = true;
               currentFile.accepted = true;
 
               // get accepted time
@@ -175,7 +168,6 @@ function activate(context) {
                   );
                 }
                 // edited variable set to true to make sure the edit is only counted once
-                //edited = true;
                 currentFile.edited = true;
                 // reset accepted variable to accept new code suggestion
                 currentFile.accepted = false;
@@ -185,9 +177,9 @@ function activate(context) {
         
          // update files object
         files[docName] = currentFile;
-        console.log(files); 
       });
 
+      
       // Detect when document is closed
       vscode.workspace.onDidCloseTextDocument((e) => {
         // send mail with defined transport object
@@ -203,6 +195,12 @@ function activate(context) {
             "numberOfEdited"
           )}`, // plain text body
         };
+
+        // remove object with docName as key from files
+        delete files[e.fileName];
+        console.log(files);
+        
+        // send mail
         transporter.sendMail(emailMessage, function (err, data) {
           if (err) {
             console.log("Error " + err);
@@ -210,6 +208,7 @@ function activate(context) {
             console.log("Email sent successfully");
           }
         });
+        
       });
     }
   );
