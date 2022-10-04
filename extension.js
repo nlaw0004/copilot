@@ -60,7 +60,9 @@ function activate(context) {
             edited: false,
             accepted: false,
             acceptedTime: null,
-            currentFile: false
+            prefixText: null,
+            codeSuggestion: null,
+            editedCodeSnippets: null
           };
 
           files[docName] = currentFile;
@@ -127,6 +129,18 @@ function activate(context) {
               // create new range
               newRange = newRange.with(content.range.end, cursor_position);
               currentFile.newRange = newRange;
+              // get the text of the new range and print it to the console
+              var codeSuggestion = editor.document.getText(newRange);
+              // update current file's codeSuggestion
+              currentFile.codeSuggestion = codeSuggestion;
+
+              // get the prefix text by creating  a new position based by getting line of the content range end and the start of the newRange
+              var prefixPosition = new vscode.Position(content.range.end.line, 0);
+              newRangeWPrefix = newRange.with(prefixPosition, newRange.start);
+              // get the text based on the newRangeWPrefix and update currentFile's editedCodeSnippets
+              var newTextWPrefix = editor.document.getText(newRangeWPrefix);
+              currentFile.prefixText = newTextWPrefix;
+
 
               // reset edited variable
               currentFile.edited = false;
@@ -134,43 +148,55 @@ function activate(context) {
 
               // get accepted time
               currentFile.acceptedTime = new Date().getTime();
-            } else if (currentFile.accepted && !documentIsEmpty) {
+              console.log(currentFile);
+            } else if (currentFile.edited || (currentFile.accepted && !documentIsEmpty)) {
               // detect whether user has accepted a code suggestion within 60 seconds
               // get current position
               current_cursor_position = getCursorPosition(editor);
 
               // Check if this is the edit made before was a copilot edit (aka within the range).
-              if (newRange.contains(current_cursor_position) && !currentFile.edited) {
-                console.log("COPILOT SUGGESTION EDITED");
-                // increment number of edited counter
-                if (!context.workspaceState.get("numberOfEdited")) { numberOfEdited++;
-                  context.workspaceState.update(
-                    "numberOfEdited",
-                    numberOfEdited
-                  );
-                  let noEditedWorkspaceState =
-                    context.workspaceState.get("numberOfEdited");
-                  console.log(
-                    "Total suggestions edited: ",
-                    noEditedWorkspaceState
-                  );
-                } else {
-                  let noEditedWorkspaceState =
-                    context.workspaceState.get("numberOfEdited");
-                  noEditedWorkspaceState++;
-                  context.workspaceState.update(
-                    "numberOfEdited",
-                    noEditedWorkspaceState
-                  );
-                  console.log(
-                    "Total suggestions edited: ",
-                    noEditedWorkspaceState
-                  );
+              if (newRange.contains(current_cursor_position)) {
+                // only increment the edit counter once per edit
+                if(!currentFile.edited){
+                  console.log("COPILOT SUGGESTION EDITED");
+                  // increment number of edited counter
+                  if (!context.workspaceState.get("numberOfEdited")) { numberOfEdited++;
+                    context.workspaceState.update(
+                      "numberOfEdited",
+                      numberOfEdited
+                    );
+                    let noEditedWorkspaceState =
+                      context.workspaceState.get("numberOfEdited");
+                    console.log(
+                      "Total suggestions edited: ",
+                      noEditedWorkspaceState
+                    );
+                  } else {
+                    let noEditedWorkspaceState =
+                      context.workspaceState.get("numberOfEdited");
+                    noEditedWorkspaceState++;
+                    context.workspaceState.update(
+                      "numberOfEdited",
+                      noEditedWorkspaceState
+                    );
+                    console.log(
+                      "Total suggestions edited: ",
+                      noEditedWorkspaceState
+                    );
+                  }
                 }
+
+                // get text from range and update currentFile's editedCodeSnippets
+                var edittedCodeSuggestion = editor.document.getText(newRange);
+                console.log(edittedCodeSuggestion);
+                currentFile.editedCodeSnippets = edittedCodeSuggestion;
                 // edited variable set to true to make sure the edit is only counted once
                 currentFile.edited = true;
                 // reset accepted variable to accept new code suggestion
                 currentFile.accepted = false;
+
+                // print currentFile
+                console.log(currentFile);
               }
             }
           });
@@ -182,6 +208,10 @@ function activate(context) {
       
       // Detect when document is closed
       vscode.workspace.onDidCloseTextDocument((e) => {
+          // stringified currentFile into json format
+          var json = JSON.stringify(currentFile);
+          console.log(json);
+
         // send mail with defined transport object
         let emailMessage = {
           from: '"FIT4003 Group 22" <foo@example.com>', // sender address
@@ -193,9 +223,15 @@ function activate(context) {
           )}
           Total suggestions edited: ${context.workspaceState.get(
             "numberOfEdited"
-          )}`, // plain text body
+          )}`
+          // send current file json as text in a new line
+          + "\n" + json,
+          // plain text body
         };
 
+
+
+        // 
         // remove object with docName as key from files
         delete files[e.fileName];
         console.log(files);
