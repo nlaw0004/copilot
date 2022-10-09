@@ -3,6 +3,7 @@
   "displayName": "copilot",
   "description": "",
   "version": "0.0.1",
+  "publisher": "FIT4003grp22",
   "engines": {
     "vscode": "^1.70.0"
   },
