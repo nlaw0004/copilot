@@ -1,10 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-const { ConsoleReporter } = require("@vscode/test-electron");
-const { isConditionalExpression } = require("typescript");
 const vscode = require("vscode");
 const nodemailer = require("nodemailer");
-const MimeNode = require("nodemailer/lib/mime-node");
 var userId = Math.floor(Math.random() * 100000);
 var newRange = new vscode.Range(0, 0, 0, 0);
 var numberOfAccepted = 0;
@@ -64,16 +61,13 @@ function activate(context) {
   // Now provide the implementation of the command with  registerCommand
   // The commandId parameter must match the command field in package.json
   let disposable = vscode.commands.registerCommand(
-    "copilot.helloWorld",
+    "copilot.copilotPlugin",
     function () {
-      // get workspace folder
-      const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath;
-      
       // Display a message box to the user
       vscode.workspace.onDidChangeTextDocument((e) => {
         // current editor
         const editor = vscode.window.activeTextEditor;
-        
+
         // get the document name and add it into currentFile dict
         currentFile.fileName = editor.document.fileName;
 
@@ -81,7 +75,7 @@ function activate(context) {
         var detectText = content.text;
         const keys = convertKeys(detectText);
 
-        // check whether changes dict is empty that means file has not been edited before 
+        // check whether changes dict is empty that means file has not been edited before
         if (Object.keys(currentFile.changes).length === 0) {
           currentChange = {
             prefix: "",
@@ -89,7 +83,7 @@ function activate(context) {
             acceptedTime: "",
             editedCodeSnippets: "",
             accepted: false,
-            edited: false
+            edited: false,
           };
         }
 
@@ -129,14 +123,28 @@ function activate(context) {
               // Increment the number of accepted code suggestions
               if (!context.workspaceState.get("numberOfAccepted")) {
                 numberOfAccepted++;
-                context.workspaceState.update("numberOfAccepted", numberOfAccepted);
-                let noAcceptedWorkspaceState = context.workspaceState.get("numberOfAccepted");
-                console.log("Total suggestions accepted: ", noAcceptedWorkspaceState);
+                context.workspaceState.update(
+                  "numberOfAccepted",
+                  numberOfAccepted
+                );
+                let noAcceptedWorkspaceState =
+                  context.workspaceState.get("numberOfAccepted");
+                console.log(
+                  "Total suggestions accepted: ",
+                  noAcceptedWorkspaceState
+                );
               } else {
-                let noAcceptedWorkspaceState = context.workspaceState.get("numberOfAccepted");
+                let noAcceptedWorkspaceState =
+                  context.workspaceState.get("numberOfAccepted");
                 noAcceptedWorkspaceState++;
-                context.workspaceState.update( "numberOfAccepted", noAcceptedWorkspaceState );
-                console.log( "Total suggestions accepted: ", noAcceptedWorkspaceState);
+                context.workspaceState.update(
+                  "numberOfAccepted",
+                  noAcceptedWorkspaceState
+                );
+                console.log(
+                  "Total suggestions accepted: ",
+                  noAcceptedWorkspaceState
+                );
               }
 
               //get cursor position
@@ -146,10 +154,13 @@ function activate(context) {
               newRange = newRange.with(content.range.end, cursor_position);
 
               // get the text of the new range and update current file's codeSuggestion
-              currentChange.codesuggested = editor.document.getText(newRange); 
+              currentChange.codesuggested = editor.document.getText(newRange);
 
               // get the prefix text by creating  a new position based by getting line of the content range end and the start of the newRange
-              var prefixPosition = new vscode.Position(content.range.end.line, 0);
+              var prefixPosition = new vscode.Position(
+                content.range.end.line,
+                0
+              );
               newRangeWPrefix = newRange.with(prefixPosition, newRange.start);
               // get the text based on the newRangeWPrefix and update currentChange's editedCodeSnippets
               var newTextWPrefix = editor.document.getText(newRangeWPrefix);
@@ -169,7 +180,10 @@ function activate(context) {
               // update currenFile changes with the new currentChange
               currentFile.changes[rangeString] = currentChange;
               console.log(currentFile.changes);
-            } else if (currentChange.edited || (currentChange.accepted && !documentIsEmpty)) {
+            } else if (
+              currentChange.edited ||
+              (currentChange.accepted && !documentIsEmpty)
+            ) {
               // detect whether user has accepted a code suggestion within 60 seconds
               // get current position
               current_cursor_position = getCursorPosition(editor);
@@ -177,10 +191,11 @@ function activate(context) {
               // Check if this is the edit made before was a copilot edit (aka within the range).
               if (newRange.contains(current_cursor_position)) {
                 // only increment the edit counter once per edit
-                if(!currentChange.edited){
+                if (!currentChange.edited) {
                   console.log("COPILOT SUGGESTION EDITED");
                   // increment number of edited counter
-                  if (!context.workspaceState.get("numberOfEdited")) { numberOfEdited++;
+                  if (!context.workspaceState.get("numberOfEdited")) {
+                    numberOfEdited++;
                     context.workspaceState.update(
                       "numberOfEdited",
                       numberOfEdited
@@ -228,37 +243,37 @@ function activate(context) {
 
       // Detect when document is closed
       vscode.workspace.onDidCloseTextDocument((e) => {
-          // stringified currentFile into json format
-          // add docCloseTime to currentFile
-          currentFile.docCloseTime = new Date().getTime();
-          console.log(currentFile);
-          var json = JSON.stringify(currentFile);
-          console.log(json);
+        // stringified currentFile into json format
+        // add docCloseTime to currentFile
+        currentFile.docCloseTime = new Date().getTime();
+        console.log(currentFile);
+        var json = JSON.stringify(currentFile);
+        console.log(json);
 
         // send mail with defined transport object
         let emailMessage = {
           from: '"FIT4003 Group 22" <foo@example.com>', // sender address
           to: "FIT4003Copilot@gmail.com", // list of receivers
           subject: "IDE plugin data", // Subject line
-          text: `User ID: ${context.workspaceState.get("userId")}
+          text:
+            `User ID: ${context.workspaceState.get("userId")}
           Total suggestions accepted: ${context.workspaceState.get(
             "numberOfAccepted"
           )}
           Total suggestions edited: ${context.workspaceState.get(
             "numberOfEdited"
-          )}`
-          // send current file json as text in a new line
-          + "\n" + json,
+          )}` +
+            // send current file json as text in a new line
+            "\n" +
+            json,
           // plain text body
         };
-
 
         // remove object with docName as key from files
         // reset currentFile
         currentFile.fileName = "";
         currentFile.changes = {};
         currentFile.docCloseTime = null;
-
 
         // send mail
         transporter.sendMail(emailMessage, function (err, data) {
@@ -268,7 +283,6 @@ function activate(context) {
             console.log("Email sent successfully");
           }
         });
-        
       });
     }
   );

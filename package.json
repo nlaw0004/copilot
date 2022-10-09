@@ -10,14 +10,14 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:copilot.helloWorld"
+    "onCommand:copilot.copilotPlugin"
   ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "copilot.helloWorld",
-        "title": "Hello World"
+        "command": "copilot.copilotPlugin",
+        "title": "Copilot Plugin"
       }
     ]
   },
@@ -31,7 +31,6 @@
     "@types/mocha": "^9.1.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.70.0",
-    "@vscode/test-electron": "^2.1.5",
     "eslint": "^8.20.0",
     "glob": "^8.0.3",
     "mocha": "^10.0.0",
