@@ -49,9 +49,11 @@ function activate(context) {
   // Set UserID
   if (!context.workspaceState.get("userId")) {
     context.workspaceState.update("userId", userId);
+    userId = context.workspaceState.get("userId");
+  } else {
+    userId = context.workspaceState.get("userId");
   }
 
-  var userId = context.workspaceState.get("userId");
   console.log("User ID: " + userId);
   // update userId in currentFile
   currentFile.userId = userId;
