@@ -16,7 +16,6 @@ var currentChange = {};
  *    - this means that the dict will be changed to this format to keep track
  *      {
  *        userid: int,
- *        filename: "name of the file",
  *        docClosedTime: time,
  *        changes: {
  *         RANGE: {
@@ -69,9 +68,6 @@ function activate(context) {
       vscode.workspace.onDidChangeTextDocument((e) => {
         // current editor
         const editor = vscode.window.activeTextEditor;
-
-        // get the document name and add it into currentFile dict
-        currentFile.fileName = editor.document.fileName;
 
         const content = e.contentChanges[0];
         var detectText = content.text;
@@ -273,7 +269,6 @@ function activate(context) {
 
         // remove object with docName as key from files
         // reset currentFile
-        currentFile.fileName = "";
         currentFile.changes = {};
         currentFile.docCloseTime = null;
 
